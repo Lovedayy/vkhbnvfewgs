@@ -30,5 +30,6 @@ public:
 	CButton m_http;
 	CButton m_dns;
 	afx_msg void OnBnClickedOk();
+	CString GetFilterName();
 };
 

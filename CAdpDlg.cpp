@@ -102,34 +102,59 @@ void CAdpDlg::OnNMClickList1(NMHDR* pNMHDR, LRESULT* pResult)
 //返回已选中设备
 pcap_if_t* CAdpDlg::GetDevice()
 {
-    for (d = alldevs; d; d = d->next)
+    //在打开设备之前设置设备为混杂模式，操作完成后再关闭设备。
+    // 同时，如果打开设备失败或设置混杂模式失败，需要及时关闭设备并释放设备列表
+    // 获取设备列表
+    if (pcap_findalldevs_ex(PCAP_SRC_IF_STRING, NULL, &alldevs, errbuf) == -1)
     {
-        m_list1.InsertItem(0, (CString)d->name);
-        m_list1.SetItemText(0, 1, (CString)d->description);
-
-        pcap_t* adhandle = pcap_open_live(d->name, 65536, 1, 1000, errbuf);
-        if (adhandle == NULL)
-        {
-            fprintf(stderr, "\nUnable to open the adapter. %s is not supported by WinPcap\n", d->name);
-            continue;
-        }
-
-        // 添加 PCAP_OPENFLAG_PROMISCUOUS 标志
-        if (pcap_setmode(adhandle, PCAP_OPENFLAG_PROMISCUOUS) != 0)
-        {
-            fprintf(stderr, "\nError setting adapter to promiscuous mode: %s\n", pcap_geterr(adhandle));
-            pcap_close(adhandle);
-            continue;
-        }
-
-        // 这里可以添加对 adhandle 的其他操作
-        // ...
-
-        pcap_close(adhandle);
+        fprintf(stderr, "Error in pcap_findalldevs_ex function: %s\n", errbuf);
+        return NULL;
     }
 
+    // 遍历设备列表，找到指定设备
+    for (pcap_if_t* d = alldevs; d != NULL; d = d->next)
+    {
+        if (d->name == adpname)
+        {
+            pcap_t* adhandle = pcap_open_live(d->name, 65536, 1, 1000, errbuf);
+            if (adhandle == NULL)
+            {
+                fprintf(stderr, "Unable to open the adapter. %s is not supported by WinPcap\n", d->name);
+                pcap_freealldevs(alldevs);
+                return NULL;
+            }
+
+            // 添加 PCAP_OPENFLAG_PROMISCUOUS 标志
+            if (pcap_setmode(adhandle, PCAP_OPENFLAG_PROMISCUOUS) != 0)
+            {
+                fprintf(stderr, "Error setting adapter to promiscuous mode: %s\n", pcap_geterr(adhandle));
+                pcap_close(adhandle);
+                pcap_freealldevs(alldevs);
+                return NULL;
+            }
+
+            // 这里可以添加对 adhandle 的其他操作
+            // ...
+
+            // 关闭设备并释放设备列表
+            pcap_close(adhandle);
+            pcap_freealldevs(alldevs);
+
+            return d;
+        }
+    }
+
+    // 没有找到指定设备，释放设备列表并返回 NULL
     pcap_freealldevs(alldevs);
     return NULL;
+}
+
+
+
+
+pcap_if_t* CAdpDlg::returnd()
+{
+    return d;
 }
 
 void CAdpDlg::OnBnClickedOk()
@@ -144,5 +169,4 @@ void CAdpDlg::OnBnClickedOk()
     else
         MessageBox(_T("请选择要绑定的网卡"));
 }
-
 

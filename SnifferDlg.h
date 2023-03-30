@@ -43,8 +43,16 @@ public:
 	CString m_totalnum;
 	CListCtrl m_list1;
 	CTreeCtrl m_tree1;
-	CAdpDlg m_adpDlg;
-	CFilterDlg m_filterDlg;
+	pcap_if_t* m_pDevice = NULL;
+	char m_filtername[100];  // 声明 m_filtername 变量
+	bool m_bFlag;
+	HANDLE m_hThread; // 线程句柄
+
 
 	afx_msg void OnEnChangeEdit1();
+	afx_msg void OnAdp();
+	afx_msg void OnFilter();
+	static DWORD WINAPI CapturePacket(LPVOID lpParam);
+	afx_msg void OnStart();
+	afx_msg void OnStop();
 };

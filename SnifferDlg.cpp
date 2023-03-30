@@ -54,8 +54,6 @@ END_MESSAGE_MAP()
 // CSnifferDlg 对话框
 CSnifferDlg::CSnifferDlg(CWnd* pParent /*=nullptr*/)
 	: CDialogEx(IDD_SNIFFER_DIALOG, pParent)
-	, m_adpDlg(this)
-	, m_filterDlg(this)
 	, m_tcpnum(_T(""))
 	, m_udpnum(_T(""))
 	, m_arpum(_T(""))
@@ -87,10 +85,10 @@ BEGIN_MESSAGE_MAP(CSnifferDlg, CDialogEx)
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
 	ON_EN_CHANGE(IDC_EDIT1, &CSnifferDlg::OnEnChangeEdit1)
-//	ON_COMMAND(ID_32771, &CSnifferDlg::OnAdp)
-//	ON_NOTIFY(LVN_ITEMCHANGED, IDC_LIST1, &CSnifferDlg::OnLvnItemchangedList1)
-//ON_COMMAND(ID_32772, &CSnifferDlg::On32772)
-//ON_COMMAND(ID_32772, &CSnifferDlg::OnFilter)
+	ON_COMMAND(ID_Adp, &CSnifferDlg::OnAdp)
+	ON_COMMAND(ID_Filter, &CSnifferDlg::OnFilter)
+	ON_COMMAND(ID_Start, &CSnifferDlg::OnStart)
+	ON_COMMAND(ID_Stop, &CSnifferDlg::OnStop)
 END_MESSAGE_MAP()
 
 
@@ -200,4 +198,86 @@ void CSnifferDlg::OnEnChangeEdit1()
 	// TODO:  在此添加控件通知处理程序代码
 }
 
+void CSnifferDlg::OnAdp()
+{
+	// TODO: 在此添加命令处理程序代码
+	CAdpDlg adpdlg;
+	if (adpdlg.DoModal() == IDOK)
+	{
+		m_pDevice = adpdlg.returnd();
+	}
+}
 
+void CSnifferDlg::OnFilter()
+{
+	// TODO: 在此添加命令处理程序代码
+	CFilterDlg filterdlg;
+	if (filterdlg.DoModal() == IDOK)
+	{
+		int len = WideCharToMultiByte(CP_ACP, 0, filterdlg.GetFilterName(), -1, NULL, 0, NULL, NULL);
+		WideCharToMultiByte(CP_ACP, 0, filterdlg.GetFilterName(), -1, m_filtername, len, NULL, NULL);
+	}
+}
+
+DWORD WINAPI CapturePacket(LPVOID lpParam)
+{
+	CSnifferDlg* pDlg = (CSnifferDlg*)lpParam;
+	pcap_t* pCap;
+	char    strErrorBuf[PCAP_ERRBUF_SIZE];
+	int res;
+	struct pcap_pkthdr* pkt_header;
+	const u_char* pkt_data;
+	u_int netmask;
+	struct bpf_program fcode;
+
+	if ((pCap = pcap_open_live(pDlg->m_pDevice->name, 65536, PCAP_OPENFLAG_PROMISCUOUS, 1000, strErrorBuf)) == NULL)
+	{
+		return -1;
+	}
+
+	if (pDlg->m_pDevice->addresses != NULL)
+		/* 获得接口第一个地址的掩码 */
+		netmask = ((struct sockaddr_in*)(pDlg->m_pDevice->addresses->netmask))->sin_addr.S_un.S_addr;
+	else
+		/* 如果接口没有地址，那么我们假设一个C类的掩码 */
+		netmask = 0xffffff;
+	//编译过滤器
+	if (pcap_compile(pCap, &fcode, pDlg->m_filtername, 1, netmask) < 0)
+	{
+		AfxMessageBox(_T("请设置过滤规则"));
+		return -1;
+	}
+	//设置过滤器
+	if (pcap_setfilter(pCap, &fcode) < 0)
+		return -1;
+
+	while ((res = pcap_next_ex(pCap, &pkt_header, &pkt_data)) >= 0)
+	{
+
+		if (res == 0)
+			continue;
+		if (!pDlg->m_bFlag)
+			break;
+		CSnifferDlg* pDlg = (CSnifferDlg*)AfxGetApp()->GetMainWnd();
+		pDlg->ShowPacketList(pkt_header, pkt_data);
+		pDlg = NULL;
+	}
+
+	pcap_close(pCap);
+	pDlg = NULL;
+	return 1;
+}
+void CSnifferDlg::OnStart()
+{
+	// TODO: 在此添加命令处理程序代码
+	m_bFlag = true;
+	DWORD dwThreadId;
+	m_hThread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)CSnifferDlg::CapturePacket, this, 0, &dwThreadId);
+}
+
+void CSnifferDlg::OnStop()
+{
+	// TODO: 在此添加命令处理程序代码
+	m_bFlag = false;
+	WaitForSingleObject(m_hThread, INFINITE);
+}

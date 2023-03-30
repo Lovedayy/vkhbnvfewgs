@@ -24,8 +24,15 @@ CFilterDlg::~CFilterDlg()
 
 void CFilterDlg::DoDataExchange(CDataExchange* pDX)
 {
-
+    CDialogEx::DoDataExchange(pDX);
+    DDX_Control(pDX, IDC_CHECK1, m_tcp);
+    DDX_Control(pDX, IDC_CHECK2, m_udp);
+    DDX_Control(pDX, IDC_CHECK3, m_arp);
+    DDX_Control(pDX, IDC_CHECK4, m_icmp);
+    DDX_Control(pDX, IDC_CHECK5, m_http);
+    DDX_Control(pDX, IDC_CHECK6, m_dns);
 }
+
 
 
 BEGIN_MESSAGE_MAP(CFilterDlg, CDialogEx)
@@ -85,3 +92,9 @@ void CFilterDlg::OnBnClickedOk()
     CDialogEx::OnOK();
 
 }
+
+CString CFilterDlg::GetFilterName()
+{
+    return filtername;
+}
+
