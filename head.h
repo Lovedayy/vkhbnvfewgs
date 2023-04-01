@@ -18,17 +18,8 @@
 #define MAC_ARP 0x0806
 #define MAC_IP6 0x86dd
 
-//ip地址
-typedef struct ip_address
-{
-    u_char byte1;
-    u_char byte2;
-    u_char byte3;
-    u_char byte4;
-}ip_address;
-
 //Mac帧头 14字节
-typedef struct ethhdr
+typedef struct eth_hdr
 {
 #if defined(LITTLE_ENDIAN)
     u_char dest[6];
@@ -38,7 +29,7 @@ typedef struct ethhdr
     u_char dest[6];
 #endif
     u_short type;
-};
+}eth_hdr;
 
 //ARP头
 typedef struct arp_hdr
@@ -56,13 +47,13 @@ typedef struct arp_hdr
     u_char ar_pln;						//协议地址长度
     u_short ar_op;						//操作码，1为请求 2为回复
     u_char ar_srcmac[6];			    //发送方MAC
-    ip_address  ar_saddr;			    //发送方IP
+    u_long  ar_saddr;			    //发送方IP
     u_char ar_destmac[6];			    //接收方MAC
-    ip_address  ar_daddr;   			//接收方IP
+    u_long  ar_daddr;   			//接收方IP
 }arp_hdr;
 
 //IPv4 首部 
-typedef struct ip_header
+typedef struct ip_hdr
 {
 #if defined(LITTLE_ENDIAN)
     u_char ip_ihl : 4;
@@ -79,10 +70,10 @@ typedef struct ip_header
     u_char  ip_ttl;            // 生存时间(Time to live)
     u_char  ip_type;           // 协议(Protocol)
     u_short ip_crc;            // 首部校验和(Header checksum)
-    ip_address  ip_saddr;      // 源地址(Source address)
-    ip_address  ip_daddr;      // 目的地址(Destination address)
+    u_long  ip_saddr;      // 源地址(Source address)
+    u_long  ip_daddr;      // 目的地址(Destination address)
     u_int   ip_op_pad;         // 选项与填充(Option + Padding)
-}ip_header;
+}ip_hdr;
 
 //TCP头部
 typedef struct tcp_hdr
@@ -154,3 +145,18 @@ typedef struct dns_hdr {
     u_short dns_nscount;        // 授权回答数
     u_short dns_arcount;        // 额外回答数
 } dns_hdr;
+
+//计数结构体
+typedef struct pktcount
+{
+    int n_ip;
+    int n_ip6;
+    int n_arp;
+    int n_tcp;
+    int n_udp;
+    int n_icmp;
+    int n_icmp6;
+    int n_http;
+    int n_dns;
+    int n_sum;
+};

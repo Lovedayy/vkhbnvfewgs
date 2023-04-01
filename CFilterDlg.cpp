@@ -98,3 +98,4 @@ CString CFilterDlg::GetFilterName()
     return filtername;
 }
 
+

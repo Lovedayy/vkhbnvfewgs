@@ -149,9 +149,6 @@ pcap_if_t* CAdpDlg::GetDevice()
     return NULL;
 }
 
-
-
-
 pcap_if_t* CAdpDlg::returnd()
 {
     return d;

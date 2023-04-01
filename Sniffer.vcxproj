@@ -189,6 +189,7 @@
     <ClInclude Include="CAdpDlg.h" />
     <ClInclude Include="CFilterDlg.h" />
     <ClInclude Include="framework.h" />
+    <ClInclude Include="head.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="Sniffer.h" />
