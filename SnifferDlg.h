@@ -44,6 +44,8 @@ public:
 	CListCtrl m_list1;
 	CTreeCtrl m_tree1;
 
+	int cursor_index = -1;
+
 	//过滤
 	char m_filtername[100]; 
 	//用于标记是否需要停止抓包
@@ -91,4 +93,6 @@ public:
 	//list上面显示包内容
 	void ShowPacketList(const pcap_pkthdr* pkt_header, const u_char* pkt_data);
 	
+	afx_msg void OnLvnItemchangedList1(NMHDR* pNMHDR, LRESULT* pResult);
+	int updateEdit(int index);
 };

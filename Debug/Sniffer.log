@@ -1,0 +1,5 @@
+﻿  CFilterDlg.cpp
+  SnifferDlg.cpp
+C:\Users\Bling\source\repos\Sniffer\head.h(162,2): warning C4091: “typedef ”: 没有声明变量时忽略“pktcount”的左侧
+  正在生成代码...
+  Sniffer.vcxproj -> C:\Users\Bling\source\repos\Sniffer\Debug\Sniffer.exe

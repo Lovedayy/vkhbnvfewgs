@@ -90,6 +90,7 @@ BEGIN_MESSAGE_MAP(CSnifferDlg, CDialogEx)
 	ON_COMMAND(ID_Start, &CSnifferDlg::OnStart)
 	ON_COMMAND(ID_Stop, &CSnifferDlg::OnStop)
 	ON_COMMAND(ID_Save, &CSnifferDlg::OnSave)
+	ON_NOTIFY(LVN_ITEMCHANGED, IDC_LIST1, &CSnifferDlg::OnLvnItemchangedList1)
 END_MESSAGE_MAP()
 
 
@@ -98,7 +99,6 @@ END_MESSAGE_MAP()
 BOOL CSnifferDlg::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
-
 	// 将“关于...”菜单项添加到系统菜单中。
 
 	// IDM_ABOUTBOX 必须在系统命令范围内。
@@ -234,10 +234,31 @@ DWORD __stdcall CSnifferDlg::CapturePacket(LPVOID lpParam)
 	u_int netmask;
 	struct bpf_program fcode;
 
-	if ((pCap = pcap_open_live(pDlg->m_pDevice->name, 65536, PCAP_OPENFLAG_PROMISCUOUS, 1000, strErrorBuf)) == NULL)
+	memset(strErrorBuf, 0, PCAP_ERRBUF_SIZE);
+	/*if ((pCap = pcap_open_live(pDlg->m_pDevice->name, 65536, PCAP_OPENFLAG_PROMISCUOUS, 1000, strErrorBuf)) == NULL)
 	{
+		TRACE(_T("Opening network device: %s\n"), pDlg->m_pDevice->name);
+		return -1;
+	}*/
+
+	pcap_t* adhandle = pcap_open_live(pDlg->m_pDevice->name, 65536, 1, 1000, strErrorBuf);
+	TRACE(_T("pcap_open_live failed: %s\n"), strErrorBuf);
+	if (adhandle == NULL)
+	{
+		TRACE(_T("pcap_open_live failed: %s\n"), pcap_geterr(adhandle));
 		return -1;
 	}
+
+	// 添加 PCAP_OPENFLAG_PROMISCUOUS 标志
+	if (pcap_setmode(adhandle, PCAP_OPENFLAG_PROMISCUOUS) != 0)
+	{
+		TRACE(_T("pcap_setmode failed: %s\n"), pcap_geterr(adhandle));
+		pcap_close(adhandle);
+		return -1;
+	}
+
+	pCap = adhandle;
+
 
 	if (pDlg->m_pDevice->addresses != NULL)
 		/* 获得接口第一个地址的掩码 */
@@ -292,6 +313,8 @@ int CSnifferDlg::savefile()
 void CSnifferDlg::OnSave()
 {
 	// TODO: 在此添加命令处理程序代码
+	if (this->savefile() < 0)
+		return;
 }
 
 void CSnifferDlg::OnStop()
@@ -406,18 +429,7 @@ void CSnifferDlg::OnStart()
 		return;
 	}
 
-	// 更新UI状态
-	CWnd* pStartButton = GetDlgItem(ID_Start);
-	CWnd* pStopButton = GetDlgItem(ID_Stop);
-
-	if (pStartButton != NULL && pStopButton != NULL) {
-		pStartButton->EnableWindow(FALSE);
-		pStopButton->EnableWindow(TRUE);
-	}
-	else {
-		AfxMessageBox(_T("控件ID可能不正确或对话框创建失败！"));
-	}
-
+	/*不需要在开始/停止捕获数据时更新UI状态（比如禁用/启用按钮）*/
 }
 
 void CSnifferDlg::ShowPacketList(const struct pcap_pkthdr* pkt_header, const u_char* pkt_data) 
@@ -566,3 +578,46 @@ void CSnifferDlg::ShowPacketList(const struct pcap_pkthdr* pkt_header, const u_c
 
 
 
+
+
+void CSnifferDlg::OnLvnItemchangedList1(NMHDR* pNMHDR, LRESULT* pResult)
+{
+	LPNMLISTVIEW pNMLV = reinterpret_cast<LPNMLISTVIEW>(pNMHDR);
+	// TODO: 在此添加控件通知处理程序代码
+		/* 如果光标选择的包不在存储列表 */
+	//int n;
+	//n = this->m_list1.GetHotItem();
+	//if (n >= this->m_localDataList.GetCount() || n == -1)
+	//	return;
+
+	///* 更新详细 和 展示包内容 */
+	//cursor_index = n;
+	//this->updateEdit(n);
+	//this->updateTree(n);
+	///*自动展开树*/
+	////树形结构展开是通过 CTreeCtrl 类的 Expand 函数实现的。
+	////该函数可以根据指定的标志将一个树形结构的节点展开或折叠，
+	////可以展开单个节点、所有子节点或所有节点。
+	//HTREEITEM tmp = this->m_tree1.GetRootItem();
+	//this->m_tree1.Expand(tmp, TVE_EXPAND);
+	//tmp = this->m_tree1.GetNextItem(tmp, TVGN_CHILD);
+	//while (tmp)
+	//{
+	//	this->m_tree1.Expand(tmp, TVE_EXPAND);
+	//	tmp = this->m_tree1.GetNextItem(tmp, TVGN_NEXT);
+	//}
+	*pResult = 0;
+}
+
+////更新包的详细信息
+//int CSnifferDlg::updateEdit(int index)
+//{
+//	CString buf;
+//	POSITION localpos = this->m_localDataList.FindIndex(index);
+//	POSITION netpos = this->m_netDataList.FindIndex(index);
+//	struct pkt_T* package_T = (struct pkt_T*)(this->m_localDataList.GetAt(localpos));
+//	u_char* package_data = (u_char*)(this->m_netDataList.GetAt(netpos));
+//	print_packet_hex(package_data, package_T->len, &buf);
+//	this->m_edit1.SetWindowText(buf); //自适应编码
+//	return 1;
+//}
